@@ -42,6 +42,30 @@
       return card;
     }
 
+    function buildTokenCell(team) {
+      const tokenTd = document.createElement('td');
+      tokenTd.className = 'token-cell';
+
+      const tokenValue = document.createElement('code');
+      tokenValue.className = 'token-value';
+      tokenValue.textContent = '*'.repeat(12);
+      tokenTd.appendChild(tokenValue);
+
+      const revealBtn = document.createElement('button');
+      revealBtn.type = 'button';
+      revealBtn.className = 'secondary';
+      revealBtn.textContent = '확인';
+      let revealed = false;
+      revealBtn.addEventListener('click', () => {
+        revealed = !revealed;
+        tokenValue.textContent = revealed ? team.proxy_token : '*'.repeat(12);
+        revealBtn.textContent = revealed ? '숨기기' : '확인';
+      });
+      tokenTd.appendChild(revealBtn);
+
+      return tokenTd;
+    }
+
     function buildViewRow(team, onEdit) {
       const tr = document.createElement('tr');
 
@@ -52,6 +76,8 @@
       const loginTd = document.createElement('td');
       loginTd.textContent = team.login_id;
       tr.appendChild(loginTd);
+
+      tr.appendChild(buildTokenCell(team));
 
       const usageTd = document.createElement('td');
       usageTd.textContent = `${formatNumber(team.tokens_used)} / ${formatNumber(team.token_budget)}`;
@@ -88,6 +114,8 @@
       loginInput.value = team.login_id;
       loginTd.appendChild(loginInput);
       tr.appendChild(loginTd);
+
+      tr.appendChild(buildTokenCell(team));
 
       const passwordTd = document.createElement('td');
       const passwordInput = document.createElement('input');
@@ -191,6 +219,7 @@
         <tr>
           <th>팀명</th>
           <th>로그인 ID</th>
+          <th>API 토큰</th>
           <th>사용량 / 예산</th>
           <th>잔여</th>
           <th>사용률</th>

@@ -138,6 +138,23 @@ td input {
   gap: 0.5rem;
 }
 
+.token-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.token-cell .token-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.token-cell button.secondary {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+
 .top-bar {
   display: flex;
   justify-content: space-between;

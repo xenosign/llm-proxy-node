@@ -93,3 +93,32 @@ button:hover {
 #logout:hover {
   background: #ddd;
 }
+
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 1.5rem;
+}
+
+.token-row .token-value {
+  flex: 1;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.token-row button.secondary {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  background: #eee;
+  color: #111;
+}
+
+.token-row button.secondary:hover {
+  background: #ddd;
+}

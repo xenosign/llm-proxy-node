@@ -43,7 +43,7 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/usage', dashboardAuth, (req, res) => {
-  const { name, token_budget: tokenBudget, tokens_used: tokensUsed } = req.team;
+  const { name, token_budget: tokenBudget, tokens_used: tokensUsed, proxy_token: proxyToken } = req.team;
 
   res.json({
     name,
@@ -51,6 +51,7 @@ router.get('/usage', dashboardAuth, (req, res) => {
     tokens_used: tokensUsed,
     remaining: tokenBudget - tokensUsed,
     percent_used: tokenBudget > 0 ? Math.min(100, (tokensUsed / tokenBudget) * 100) : 0,
+    proxy_token: proxyToken,
   });
 });
 

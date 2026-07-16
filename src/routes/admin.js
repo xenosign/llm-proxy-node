@@ -6,11 +6,19 @@ const adminAuth = require('../middleware/adminAuth');
 const router = express.Router();
 
 function toTeamSummary(team) {
-  const { id, name, login_id: loginId, token_budget: tokenBudget, tokens_used: tokensUsed } = team;
+  const {
+    id,
+    name,
+    login_id: loginId,
+    proxy_token: proxyToken,
+    token_budget: tokenBudget,
+    tokens_used: tokensUsed,
+  } = team;
   return {
     id,
     name,
     login_id: loginId,
+    proxy_token: proxyToken,
     token_budget: tokenBudget,
     tokens_used: tokensUsed,
     remaining: tokenBudget - tokensUsed,
@@ -58,7 +66,7 @@ router.post('/logout', (req, res) => {
 router.get('/teams', adminAuth, async (req, res) => {
   const { data: teams, error } = await supabase
     .from('teams')
-    .select('id, name, login_id, token_budget, tokens_used')
+    .select('id, name, login_id, proxy_token, token_budget, tokens_used')
     .order('name', { ascending: true });
 
   if (error) {
@@ -114,7 +122,7 @@ router.patch('/teams/:id', adminAuth, async (req, res) => {
     .from('teams')
     .update(updates)
     .eq('id', req.params.id)
-    .select('id, name, login_id, token_budget, tokens_used')
+    .select('id, name, login_id, proxy_token, token_budget, tokens_used')
     .single();
 
   if (error) {

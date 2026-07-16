@@ -47,6 +47,32 @@
       remainingRow.innerHTML = `<span>남은 토큰</span><span>${formatNumber(data.remaining)}</span>`;
       app.appendChild(remainingRow);
 
+      const tokenRow = document.createElement('div');
+      tokenRow.className = 'token-row';
+
+      const tokenLabel = document.createElement('span');
+      tokenLabel.textContent = 'API 토큰';
+      tokenRow.appendChild(tokenLabel);
+
+      const tokenValue = document.createElement('code');
+      tokenValue.className = 'token-value';
+      tokenValue.textContent = '*'.repeat(12);
+      tokenRow.appendChild(tokenValue);
+
+      const revealBtn = document.createElement('button');
+      revealBtn.type = 'button';
+      revealBtn.className = 'secondary';
+      revealBtn.textContent = '확인';
+      let revealed = false;
+      revealBtn.addEventListener('click', () => {
+        revealed = !revealed;
+        tokenValue.textContent = revealed ? data.proxy_token : '*'.repeat(12);
+        revealBtn.textContent = revealed ? '숨기기' : '확인';
+      });
+      tokenRow.appendChild(revealBtn);
+
+      app.appendChild(tokenRow);
+
       const logoutBtn = document.createElement('button');
       logoutBtn.id = 'logout';
       logoutBtn.textContent = '로그아웃';

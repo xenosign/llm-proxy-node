@@ -79,9 +79,17 @@
 
       tr.appendChild(buildTokenCell(team));
 
-      const usageTd = document.createElement('td');
-      usageTd.textContent = `${formatNumber(team.tokens_used)} / ${formatNumber(team.token_budget)}`;
-      tr.appendChild(usageTd);
+      const passwordTd = document.createElement('td');
+      passwordTd.textContent = '••••••••';
+      tr.appendChild(passwordTd);
+
+      const usedTd = document.createElement('td');
+      usedTd.textContent = formatNumber(team.tokens_used);
+      tr.appendChild(usedTd);
+
+      const budgetViewTd = document.createElement('td');
+      budgetViewTd.textContent = formatNumber(team.token_budget);
+      tr.appendChild(budgetViewTd);
 
       const remainingTd = document.createElement('td');
       remainingTd.textContent = formatNumber(team.remaining);
@@ -124,6 +132,14 @@
       passwordTd.appendChild(passwordInput);
       tr.appendChild(passwordTd);
 
+      const usedTd = document.createElement('td');
+      const usedInput = document.createElement('input');
+      usedInput.type = 'number';
+      usedInput.min = '0';
+      usedInput.value = team.tokens_used;
+      usedTd.appendChild(usedInput);
+      tr.appendChild(usedTd);
+
       const budgetTd = document.createElement('td');
       const budgetInput = document.createElement('input');
       budgetInput.type = 'number';
@@ -132,8 +148,11 @@
       budgetTd.appendChild(budgetInput);
       tr.appendChild(budgetTd);
 
-      const spacerTd = document.createElement('td');
-      tr.appendChild(spacerTd);
+      const remainingSpacerTd = document.createElement('td');
+      tr.appendChild(remainingSpacerTd);
+
+      const percentSpacerTd = document.createElement('td');
+      tr.appendChild(percentSpacerTd);
 
       const actionTd = document.createElement('td');
       actionTd.className = 'row-actions';
@@ -144,6 +163,7 @@
         onSave({
           login_id: loginInput.value.trim(),
           password: passwordInput.value,
+          tokens_used: usedInput.value,
           token_budget: budgetInput.value,
         })
       );
@@ -161,7 +181,11 @@
     }
 
     async function updateTeam(teamId, fields) {
-      const body = { login_id: fields.login_id, token_budget: fields.token_budget };
+      const body = {
+        login_id: fields.login_id,
+        tokens_used: fields.tokens_used,
+        token_budget: fields.token_budget,
+      };
       if (fields.password) body.password = fields.password;
 
       const res = await fetch(`/api/admin/teams/${teamId}`, {
@@ -220,7 +244,9 @@
           <th>팀명</th>
           <th>로그인 ID</th>
           <th>API 토큰</th>
-          <th>사용량 / 예산</th>
+          <th>비밀번호</th>
+          <th>사용량</th>
+          <th>예산</th>
           <th>잔여</th>
           <th>사용률</th>
           <th></th>

@@ -89,7 +89,7 @@ router.get('/teams', adminAuth, async (req, res) => {
 });
 
 router.patch('/teams/:id', adminAuth, async (req, res) => {
-  const { login_id: loginId, password, token_budget: tokenBudget } = req.body || {};
+  const { login_id: loginId, password, token_budget: tokenBudget, tokens_used: tokensUsed } = req.body || {};
   const updates = {};
 
   if (loginId !== undefined) {
@@ -112,6 +112,14 @@ router.patch('/teams/:id', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'token_budget must be a positive number' });
     }
     updates.token_budget = parsedBudget;
+  }
+
+  if (tokensUsed !== undefined) {
+    const parsedUsed = Number(tokensUsed);
+    if (!Number.isFinite(parsedUsed) || parsedUsed < 0) {
+      return res.status(400).json({ error: 'tokens_used must be a non-negative number' });
+    }
+    updates.tokens_used = parsedUsed;
   }
 
   if (Object.keys(updates).length === 0) {

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin 대시보드</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">불러오는 중...</div>
+
+  <script>
+    function formatNumber(n) {
+      return n.toLocaleString('ko-KR');
+    }
+
+    function buildSummaryCard(summary) {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const h2 = document.createElement('h2');
+      h2.textContent = '전체 사용량';
+      card.appendChild(h2);
+
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      row.innerHTML = `<span>사용량</span><span>${formatNumber(summary.total_used)} / ${formatNumber(summary.total_budget)} 토큰</span>`;
+      card.appendChild(row);
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      const barFill = document.createElement('div');
+      barFill.className = 'bar-fill';
+      barFill.style.width = `${summary.percent_used}%`;
+      bar.appendChild(barFill);
+      card.appendChild(bar);
+
+      const remainingRow = document.createElement('div');
+      remainingRow.className = 'stat-row';
+      remainingRow.innerHTML = `<span>남은 토큰</span><span>${formatNumber(summary.remaining)}</span>`;
+      card.appendChild(remainingRow);
+
+      return card;
+    }
+
+    function buildViewRow(team, onEdit) {
+      const tr = document.createElement('tr');
+
+      const nameTd = document.createElement('td');
+      nameTd.textContent = team.name;
+      tr.appendChild(nameTd);
+
+      const loginTd = document.createElement('td');
+      loginTd.textContent = team.login_id;
+      tr.appendChild(loginTd);
+
+      const usageTd = document.createElement('td');
+      usageTd.textContent = `${formatNumber(team.tokens_used)} / ${formatNumber(team.token_budget)}`;
+      tr.appendChild(usageTd);
+
+      const remainingTd = document.createElement('td');
+      remainingTd.textContent = formatNumber(team.remaining);
+      tr.appendChild(remainingTd);
+
+      const percentTd = document.createElement('td');
+      percentTd.textContent = `${team.percent_used.toFixed(1)}%`;
+      tr.appendChild(percentTd);
+
+      const actionTd = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.className = 'secondary';
+      editBtn.textContent = '수정';
+      editBtn.addEventListener('click', onEdit);
+      actionTd.appendChild(editBtn);
+      tr.appendChild(actionTd);
+
+      return tr;
+    }
+
+    function buildEditRow(team, onSave, onCancel) {
+      const tr = document.createElement('tr');
+
+      const nameTd = document.createElement('td');
+      nameTd.textContent = team.name;
+      tr.appendChild(nameTd);
+
+      const loginTd = document.createElement('td');
+      const loginInput = document.createElement('input');
+      loginInput.value = team.login_id;
+      loginTd.appendChild(loginInput);
+      tr.appendChild(loginTd);
+
+      const passwordTd = document.createElement('td');
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'password';
+      passwordInput.placeholder = '변경 시에만 입력';
+      passwordTd.appendChild(passwordInput);
+      tr.appendChild(passwordTd);
+
+      const budgetTd = document.createElement('td');
+      const budgetInput = document.createElement('input');
+      budgetInput.type = 'number';
+      budgetInput.min = '1';
+      budgetInput.value = team.token_budget;
+      budgetTd.appendChild(budgetInput);
+      tr.appendChild(budgetTd);
+
+      const spacerTd = document.createElement('td');
+      tr.appendChild(spacerTd);
+
+      const actionTd = document.createElement('td');
+      actionTd.className = 'row-actions';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '저장';
+      saveBtn.addEventListener('click', () =>
+        onSave({
+          login_id: loginInput.value.trim(),
+          password: passwordInput.value,
+          token_budget: budgetInput.value,
+        })
+      );
+      actionTd.appendChild(saveBtn);
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'secondary';
+      cancelBtn.textContent = '취소';
+      cancelBtn.addEventListener('click', onCancel);
+      actionTd.appendChild(cancelBtn);
+
+      tr.appendChild(actionTd);
+
+      return tr;
+    }
+
+    async function updateTeam(teamId, fields) {
+      const body = { login_id: fields.login_id, token_budget: fields.token_budget };
+      if (fields.password) body.password = fields.password;
+
+      const res = await fetch(`/api/admin/teams/${teamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'update_failed');
+      }
+    }
+
+    async function load() {
+      const res = await fetch('/api/admin/teams', { credentials: 'include' });
+
+      if (!res.ok) {
+        window.location.href = '/admin/login.html';
+        return;
+      }
+
+      const data = await res.json();
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+
+      const topBar = document.createElement('div');
+      topBar.className = 'top-bar';
+      const h1 = document.createElement('h1');
+      h1.textContent = 'Admin 대시보드';
+      topBar.appendChild(h1);
+      const logoutBtn = document.createElement('button');
+      logoutBtn.className = 'secondary';
+      logoutBtn.textContent = '로그아웃';
+      logoutBtn.addEventListener('click', async () => {
+        await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+        window.location.href = '/admin/login.html';
+      });
+      topBar.appendChild(logoutBtn);
+      app.appendChild(topBar);
+
+      app.appendChild(buildSummaryCard(data.summary));
+
+      const tableCard = document.createElement('div');
+      tableCard.className = 'card';
+
+      const h2 = document.createElement('h2');
+      h2.textContent = '팀별 사용량';
+      tableCard.appendChild(h2);
+
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr>
+          <th>팀명</th>
+          <th>로그인 ID</th>
+          <th>사용량 / 예산</th>
+          <th>잔여</th>
+          <th>사용률</th>
+          <th></th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      table.appendChild(tbody);
+      tableCard.appendChild(table);
+      app.appendChild(tableCard);
+
+      function renderRow(team) {
+        const viewRow = buildViewRow(team, () => {
+          const editRow = buildEditRow(
+            team,
+            async (fields) => {
+              try {
+                await updateTeam(team.id, fields);
+                await load();
+              } catch (err) {
+                alert(`수정 실패: ${err.message}`);
+              }
+            },
+            () => editRow.replaceWith(renderRow(team))
+          );
+          viewRow.replaceWith(editRow);
+        });
+        return viewRow;
+      }
+
+      data.teams.forEach((team) => tbody.appendChild(renderRow(team)));
+    }
+
+    load();
+  </script>
+</body>
+</html>

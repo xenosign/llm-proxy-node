@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin 로그인</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <form id="login-form">
+    <h1>Admin 로그인</h1>
+    <label>아이디
+      <input name="login_id" autocomplete="username" required />
+    </label>
+    <label>비밀번호
+      <input name="password" type="password" autocomplete="current-password" required />
+    </label>
+    <button type="submit">로그인</button>
+    <p class="error" id="error"></p>
+  </form>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorEl = document.getElementById('error');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl.textContent = '';
+
+      const body = Object.fromEntries(new FormData(form));
+
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        window.location.href = '/admin/';
+      } else {
+        errorEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+      }
+    });
+  </script>
+</body>
+</html>

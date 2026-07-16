@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>사용량 대시보드</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">불러오는 중...</div>
+
+  <script>
+    function formatNumber(n) {
+      return n.toLocaleString('ko-KR');
+    }
+
+    async function load() {
+      const res = await fetch('/api/dashboard/usage', { credentials: 'include' });
+
+      if (!res.ok) {
+        window.location.href = '/dashboard/login.html';
+        return;
+      }
+
+      const data = await res.json();
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+
+      const h1 = document.createElement('h1');
+      h1.textContent = data.name;
+      app.appendChild(h1);
+
+      const usedRow = document.createElement('div');
+      usedRow.className = 'stat-row';
+      usedRow.innerHTML = `<span>사용량</span><span>${formatNumber(data.tokens_used)} / ${formatNumber(data.token_budget)} 토큰</span>`;
+      app.appendChild(usedRow);
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      const barFill = document.createElement('div');
+      barFill.className = 'bar-fill';
+      barFill.style.width = `${data.percent_used}%`;
+      bar.appendChild(barFill);
+      app.appendChild(bar);
+
+      const remainingRow = document.createElement('div');
+      remainingRow.className = 'stat-row';
+      remainingRow.innerHTML = `<span>남은 토큰</span><span>${formatNumber(data.remaining)}</span>`;
+      app.appendChild(remainingRow);
+
+      const logoutBtn = document.createElement('button');
+      logoutBtn.id = 'logout';
+      logoutBtn.textContent = '로그아웃';
+      logoutBtn.addEventListener('click', async () => {
+        await fetch('/api/dashboard/logout', { method: 'POST', credentials: 'include' });
+        window.location.href = '/dashboard/login.html';
+      });
+      app.appendChild(logoutBtn);
+    }
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+const env = require('../config/env');
+const { recordUsage } = require('./usage');
+
+const OPENAI_BASE_URL = 'https://api.openai.com';
+
+const REQUEST_HEADERS_TO_DROP = new Set(['host', 'connection', 'content-length', 'accept-encoding', 'authorization']);
+const RESPONSE_HEADERS_TO_DROP = new Set(['content-length', 'content-encoding', 'transfer-encoding', 'connection']);
+
+function buildUpstreamHeaders(req) {
+  const headers = {};
+
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (REQUEST_HEADERS_TO_DROP.has(key.toLowerCase())) continue;
+    headers[key] = value;
+  }
+
+  headers['content-type'] = req.get('content-type') || 'application/json';
+  headers['authorization'] = `Bearer ${env.openaiApiKey}`;
+
+  return headers;
+}
+
+function copyResponseHeaders(upstreamResponse, res) {
+  upstreamResponse.headers.forEach((value, key) => {
+    if (RESPONSE_HEADERS_TO_DROP.has(key.toLowerCase())) return;
+    res.set(key, value);
+  });
+}
+
+async function proxyToOpenAI(req, res) {
+  const isStreaming = req.body && req.body.stream === true;
+  const targetUrl = `${OPENAI_BASE_URL}${req.originalUrl}`;
+  const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+
+  const outgoingBody = { ...req.body };
+  if (isStreaming) {
+    outgoingBody.stream_options = { ...(outgoingBody.stream_options || {}), include_usage: true };
+  }
+
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch(targetUrl, {
+      method: req.method,
+      headers: buildUpstreamHeaders(req),
+      body: hasBody ? JSON.stringify(outgoingBody) : undefined,
+    });
+  } catch (err) {
+    return res.status(502).json({
+      error: {
+        message: `Failed to reach OpenAI: ${err.message}`,
+        type: 'proxy_error',
+        param: null,
+        code: 'upstream_unreachable',
+      },
+    });
+  }
+
+  if (isStreaming) {
+    return handleStreamingResponse(upstreamResponse, req.team.id, res);
+  }
+
+  return handleJsonResponse(upstreamResponse, req.team.id, res);
+}
+
+async function handleJsonResponse(upstreamResponse, teamId, res) {
+  const text = await upstreamResponse.text();
+  res.status(upstreamResponse.status);
+  copyResponseHeaders(upstreamResponse, res);
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return res.send(text);
+  }
+
+  if (parsed && parsed.usage && typeof parsed.usage.total_tokens === 'number') {
+    await recordUsage(teamId, parsed.usage.total_tokens);
+  }
+
+  res.send(text);
+}
+
+async function handleStreamingResponse(upstreamResponse, teamId, res) {
+  if (!upstreamResponse.ok || !upstreamResponse.body) {
+    const text = await upstreamResponse.text();
+    res.status(upstreamResponse.status);
+    copyResponseHeaders(upstreamResponse, res);
+    return res.send(text);
+  }
+
+  res.status(upstreamResponse.status);
+  copyResponseHeaders(upstreamResponse, res);
+
+  let buffer = '';
+  let capturedUsage = null;
+
+  const reader = upstreamResponse.body.getReader();
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      res.write(chunk);
+
+      buffer += chunk;
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+
+      for (const event of events) {
+        const line = event.split('\n').find((l) => l.startsWith('data: '));
+        if (!line) continue;
+
+        const data = line.slice('data: '.length).trim();
+        if (data === '[DONE]') continue;
+
+        try {
+          const json = JSON.parse(data);
+          if (json.usage && typeof json.usage.total_tokens === 'number') {
+            capturedUsage = json.usage.total_tokens;
+          }
+        } catch {
+          // malformed/partial SSE chunk, ignore
+        }
+      }
+    }
+  } finally {
+    res.end();
+    if (capturedUsage !== null) {
+      await recordUsage(teamId, capturedUsage);
+    }
+  }
+}
+
+module.exports = { proxyToOpenAI };

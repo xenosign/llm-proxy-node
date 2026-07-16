@@ -20,6 +20,10 @@ form, #app {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+#app {
+  max-width: 960px;
+}
+
 h1 {
   font-size: 1.25rem;
   margin: 0 0 1.5rem;

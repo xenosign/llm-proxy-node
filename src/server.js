@@ -14,6 +14,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
 app.get('/healthz', (req, res) => res.json({ ok: true }));
+app.get('/', (req, res) => res.redirect('/dashboard/login.html'));
 
 app.use('/api/dashboard', dashboardRouter);
 app.use('/dashboard', express.static(path.join(__dirname, '../public')));

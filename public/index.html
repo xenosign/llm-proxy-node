@@ -71,6 +71,19 @@
       });
       tokenRow.appendChild(revealBtn);
 
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'secondary';
+      copyBtn.textContent = '복사';
+      copyBtn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(data.proxy_token);
+        copyBtn.textContent = '복사됨';
+        setTimeout(() => {
+          copyBtn.textContent = '복사';
+        }, 1500);
+      });
+      tokenRow.appendChild(copyBtn);
+
       app.appendChild(tokenRow);
 
       const logoutBtn = document.createElement('button');

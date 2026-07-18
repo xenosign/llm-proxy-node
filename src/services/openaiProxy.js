@@ -1,5 +1,6 @@
 const env = require('../config/env');
 const { recordUsage } = require('./usage');
+const { costForUsage } = require('./pricing');
 
 const OPENAI_BASE_URL = 'https://api.openai.com';
 
@@ -75,7 +76,8 @@ async function handleJsonResponse(upstreamResponse, teamId, res) {
   }
 
   if (parsed && parsed.usage && typeof parsed.usage.total_tokens === 'number') {
-    await recordUsage(teamId, parsed.usage.total_tokens);
+    const cost = costForUsage(parsed.model, parsed.usage);
+    await recordUsage(teamId, parsed.usage.total_tokens, cost);
   }
 
   res.send(text);
@@ -94,6 +96,7 @@ async function handleStreamingResponse(upstreamResponse, teamId, res) {
 
   let buffer = '';
   let capturedUsage = null;
+  let capturedModel = null;
 
   const reader = upstreamResponse.body.getReader();
   const decoder = new TextDecoder();
@@ -119,8 +122,9 @@ async function handleStreamingResponse(upstreamResponse, teamId, res) {
 
         try {
           const json = JSON.parse(data);
+          if (json.model) capturedModel = json.model;
           if (json.usage && typeof json.usage.total_tokens === 'number') {
-            capturedUsage = json.usage.total_tokens;
+            capturedUsage = json.usage;
           }
         } catch {
           // malformed/partial SSE chunk, ignore
@@ -130,7 +134,8 @@ async function handleStreamingResponse(upstreamResponse, teamId, res) {
   } finally {
     res.end();
     if (capturedUsage !== null) {
-      await recordUsage(teamId, capturedUsage);
+      const cost = costForUsage(capturedModel, capturedUsage);
+      await recordUsage(teamId, capturedUsage.total_tokens, cost);
     }
   }
 }

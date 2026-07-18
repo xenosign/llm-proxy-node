@@ -20,7 +20,7 @@ async function dashboardAuth(req, res, next) {
 
   const { data: team, error } = await supabase
     .from('teams')
-    .select('id, name, token_budget, tokens_used, proxy_token')
+    .select('id, name, budget_usd, cost_used, tokens_used, proxy_token')
     .eq('id', payload.sub)
     .single();
 

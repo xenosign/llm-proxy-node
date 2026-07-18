@@ -11,18 +11,22 @@ function toTeamSummary(team) {
     name,
     login_id: loginId,
     proxy_token: proxyToken,
-    token_budget: tokenBudget,
+    budget_usd: budgetUsdRaw,
+    cost_used: costUsedRaw,
     tokens_used: tokensUsed,
   } = team;
+  const budgetUsd = Number(budgetUsdRaw);
+  const costUsed = Number(costUsedRaw);
   return {
     id,
     name,
     login_id: loginId,
     proxy_token: proxyToken,
-    token_budget: tokenBudget,
+    budget_usd: budgetUsd,
+    cost_used: costUsed,
     tokens_used: tokensUsed,
-    remaining: tokenBudget - tokensUsed,
-    percent_used: tokenBudget > 0 ? Math.min(100, (tokensUsed / tokenBudget) * 100) : 0,
+    remaining_usd: budgetUsd - costUsed,
+    percent_used: budgetUsd > 0 ? Math.min(100, (costUsed / budgetUsd) * 100) : 0,
   };
 }
 
@@ -66,7 +70,7 @@ router.post('/logout', (req, res) => {
 router.get('/teams', adminAuth, async (req, res) => {
   const { data: teams, error } = await supabase
     .from('teams')
-    .select('id, name, login_id, proxy_token, token_budget, tokens_used')
+    .select('id, name, login_id, proxy_token, budget_usd, cost_used, tokens_used')
     .order('name', { ascending: true });
 
   if (error) {
@@ -74,22 +78,30 @@ router.get('/teams', adminAuth, async (req, res) => {
   }
 
   const teamSummaries = teams.map(toTeamSummary);
-  const totalBudget = teamSummaries.reduce((sum, t) => sum + t.token_budget, 0);
-  const totalUsed = teamSummaries.reduce((sum, t) => sum + t.tokens_used, 0);
+  const totalBudgetUsd = teamSummaries.reduce((sum, t) => sum + t.budget_usd, 0);
+  const totalCostUsed = teamSummaries.reduce((sum, t) => sum + t.cost_used, 0);
+  const totalTokensUsed = teamSummaries.reduce((sum, t) => sum + t.tokens_used, 0);
 
   res.json({
     summary: {
-      total_budget: totalBudget,
-      total_used: totalUsed,
-      remaining: totalBudget - totalUsed,
-      percent_used: totalBudget > 0 ? Math.min(100, (totalUsed / totalBudget) * 100) : 0,
+      total_budget_usd: totalBudgetUsd,
+      total_cost_used: totalCostUsed,
+      total_tokens_used: totalTokensUsed,
+      remaining_usd: totalBudgetUsd - totalCostUsed,
+      percent_used: totalBudgetUsd > 0 ? Math.min(100, (totalCostUsed / totalBudgetUsd) * 100) : 0,
     },
     teams: teamSummaries,
   });
 });
 
 router.patch('/teams/:id', adminAuth, async (req, res) => {
-  const { login_id: loginId, password, token_budget: tokenBudget, tokens_used: tokensUsed } = req.body || {};
+  const {
+    login_id: loginId,
+    password,
+    budget_usd: budgetUsd,
+    cost_used: costUsed,
+    tokens_used: tokensUsed,
+  } = req.body || {};
   const updates = {};
 
   if (loginId !== undefined) {
@@ -106,12 +118,20 @@ router.patch('/teams/:id', adminAuth, async (req, res) => {
     updates.password_hash = await hashPassword(password);
   }
 
-  if (tokenBudget !== undefined) {
-    const parsedBudget = Number(tokenBudget);
+  if (budgetUsd !== undefined) {
+    const parsedBudget = Number(budgetUsd);
     if (!Number.isFinite(parsedBudget) || parsedBudget <= 0) {
-      return res.status(400).json({ error: 'token_budget must be a positive number' });
+      return res.status(400).json({ error: 'budget_usd must be a positive number' });
     }
-    updates.token_budget = parsedBudget;
+    updates.budget_usd = parsedBudget;
+  }
+
+  if (costUsed !== undefined) {
+    const parsedCost = Number(costUsed);
+    if (!Number.isFinite(parsedCost) || parsedCost < 0) {
+      return res.status(400).json({ error: 'cost_used must be a non-negative number' });
+    }
+    updates.cost_used = parsedCost;
   }
 
   if (tokensUsed !== undefined) {
@@ -130,7 +150,7 @@ router.patch('/teams/:id', adminAuth, async (req, res) => {
     .from('teams')
     .update(updates)
     .eq('id', req.params.id)
-    .select('id, name, login_id, proxy_token, token_budget, tokens_used')
+    .select('id, name, login_id, proxy_token, budget_usd, cost_used, tokens_used')
     .single();
 
   if (error) {

@@ -10,7 +10,11 @@
 
   <script>
     function formatNumber(n) {
-      return n.toLocaleString('ko-KR');
+      return Number(n).toLocaleString('ko-KR');
+    }
+
+    function formatUsd(n) {
+      return `$${Number(n).toFixed(4)}`;
     }
 
     async function load() {
@@ -31,8 +35,13 @@
 
       const usedRow = document.createElement('div');
       usedRow.className = 'stat-row';
-      usedRow.innerHTML = `<span>사용량</span><span>${formatNumber(data.tokens_used)} / ${formatNumber(data.token_budget)} 토큰</span>`;
+      usedRow.innerHTML = `<span>사용 금액</span><span>${formatUsd(data.cost_used)} / ${formatUsd(data.budget_usd)}</span>`;
       app.appendChild(usedRow);
+
+      const tokenUsedRow = document.createElement('div');
+      tokenUsedRow.className = 'stat-row';
+      tokenUsedRow.innerHTML = `<span>누적 토큰</span><span>${formatNumber(data.tokens_used)} 토큰</span>`;
+      app.appendChild(tokenUsedRow);
 
       const bar = document.createElement('div');
       bar.className = 'bar';
@@ -44,7 +53,7 @@
 
       const remainingRow = document.createElement('div');
       remainingRow.className = 'stat-row';
-      remainingRow.innerHTML = `<span>남은 토큰</span><span>${formatNumber(data.remaining)}</span>`;
+      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatUsd(data.remaining_usd)}</span>`;
       app.appendChild(remainingRow);
 
       const tokenRow = document.createElement('div');

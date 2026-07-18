@@ -10,7 +10,11 @@
 
   <script>
     function formatNumber(n) {
-      return n.toLocaleString('ko-KR');
+      return Number(n).toLocaleString('ko-KR');
+    }
+
+    function formatUsd(n) {
+      return `$${Number(n).toFixed(4)}`;
     }
 
     function buildSummaryCard(summary) {
@@ -23,8 +27,13 @@
 
       const row = document.createElement('div');
       row.className = 'stat-row';
-      row.innerHTML = `<span>사용량</span><span>${formatNumber(summary.total_used)} / ${formatNumber(summary.total_budget)} 토큰</span>`;
+      row.innerHTML = `<span>사용 금액</span><span>${formatUsd(summary.total_cost_used)} / ${formatUsd(summary.total_budget_usd)}</span>`;
       card.appendChild(row);
+
+      const tokenRow = document.createElement('div');
+      tokenRow.className = 'stat-row';
+      tokenRow.innerHTML = `<span>누적 토큰</span><span>${formatNumber(summary.total_tokens_used)} 토큰</span>`;
+      card.appendChild(tokenRow);
 
       const bar = document.createElement('div');
       bar.className = 'bar';
@@ -36,7 +45,7 @@
 
       const remainingRow = document.createElement('div');
       remainingRow.className = 'stat-row';
-      remainingRow.innerHTML = `<span>남은 토큰</span><span>${formatNumber(summary.remaining)}</span>`;
+      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatUsd(summary.remaining_usd)}</span>`;
       card.appendChild(remainingRow);
 
       return card;
@@ -66,6 +75,22 @@
       return tokenTd;
     }
 
+    function buildUsageCell(team) {
+      const td = document.createElement('td');
+      td.className = 'usage-cell';
+
+      const costDiv = document.createElement('div');
+      costDiv.textContent = formatUsd(team.cost_used);
+      td.appendChild(costDiv);
+
+      const tokenDiv = document.createElement('div');
+      tokenDiv.className = 'usage-tokens';
+      tokenDiv.textContent = `${formatNumber(team.tokens_used)} 토큰`;
+      td.appendChild(tokenDiv);
+
+      return td;
+    }
+
     function buildViewRow(team, onEdit) {
       const tr = document.createElement('tr');
 
@@ -83,16 +108,14 @@
       passwordTd.textContent = '••••••••';
       tr.appendChild(passwordTd);
 
-      const usedTd = document.createElement('td');
-      usedTd.textContent = formatNumber(team.tokens_used);
-      tr.appendChild(usedTd);
+      tr.appendChild(buildUsageCell(team));
 
       const budgetViewTd = document.createElement('td');
-      budgetViewTd.textContent = formatNumber(team.token_budget);
+      budgetViewTd.textContent = formatUsd(team.budget_usd);
       tr.appendChild(budgetViewTd);
 
       const remainingTd = document.createElement('td');
-      remainingTd.textContent = formatNumber(team.remaining);
+      remainingTd.textContent = formatUsd(team.remaining_usd);
       tr.appendChild(remainingTd);
 
       const percentTd = document.createElement('td');
@@ -132,19 +155,28 @@
       passwordTd.appendChild(passwordInput);
       tr.appendChild(passwordTd);
 
-      const usedTd = document.createElement('td');
-      const usedInput = document.createElement('input');
-      usedInput.type = 'number';
-      usedInput.min = '0';
-      usedInput.value = team.tokens_used;
-      usedTd.appendChild(usedInput);
-      tr.appendChild(usedTd);
+      const usageTd = document.createElement('td');
+      usageTd.className = 'usage-cell';
+      const costInput = document.createElement('input');
+      costInput.type = 'number';
+      costInput.min = '0';
+      costInput.step = '0.0001';
+      costInput.value = team.cost_used;
+      usageTd.appendChild(costInput);
+      const tokensInput = document.createElement('input');
+      tokensInput.type = 'number';
+      tokensInput.min = '0';
+      tokensInput.className = 'usage-tokens-input';
+      tokensInput.value = team.tokens_used;
+      usageTd.appendChild(tokensInput);
+      tr.appendChild(usageTd);
 
       const budgetTd = document.createElement('td');
       const budgetInput = document.createElement('input');
       budgetInput.type = 'number';
-      budgetInput.min = '1';
-      budgetInput.value = team.token_budget;
+      budgetInput.min = '0.01';
+      budgetInput.step = '0.01';
+      budgetInput.value = team.budget_usd;
       budgetTd.appendChild(budgetInput);
       tr.appendChild(budgetTd);
 
@@ -163,8 +195,9 @@
         onSave({
           login_id: loginInput.value.trim(),
           password: passwordInput.value,
-          tokens_used: usedInput.value,
-          token_budget: budgetInput.value,
+          cost_used: costInput.value,
+          tokens_used: tokensInput.value,
+          budget_usd: budgetInput.value,
         })
       );
       actionTd.appendChild(saveBtn);
@@ -183,8 +216,9 @@
     async function updateTeam(teamId, fields) {
       const body = {
         login_id: fields.login_id,
+        cost_used: fields.cost_used,
         tokens_used: fields.tokens_used,
-        token_budget: fields.token_budget,
+        budget_usd: fields.budget_usd,
       };
       if (fields.password) body.password = fields.password;
 
@@ -246,8 +280,8 @@
           <th>API 토큰</th>
           <th>비밀번호</th>
           <th>사용량</th>
-          <th>예산</th>
-          <th>잔여</th>
+          <th>예산($)</th>
+          <th>잔여 예산</th>
           <th>사용률</th>
           <th></th>
         </tr>

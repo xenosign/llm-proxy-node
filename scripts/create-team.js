@@ -7,13 +7,13 @@ const ws = require('ws');
 const [name, budgetArg, loginId, password] = process.argv.slice(2);
 
 if (!name || !budgetArg || !loginId || !password) {
-  console.error('Usage: node scripts/create-team.js <team-name> <token-budget> <login-id> <password>');
+  console.error('Usage: node scripts/create-team.js <team-name> <budget-usd> <login-id> <password>');
   process.exit(1);
 }
 
-const tokenBudget = Number(budgetArg);
-if (!Number.isFinite(tokenBudget) || tokenBudget <= 0) {
-  console.error('token-budget must be a positive number');
+const budgetUsd = Number(budgetArg);
+if (!Number.isFinite(budgetUsd) || budgetUsd <= 0) {
+  console.error('budget-usd must be a positive number');
   process.exit(1);
 }
 
@@ -33,7 +33,7 @@ async function main() {
       proxy_token: proxyToken,
       login_id: loginId,
       password_hash: passwordHash,
-      token_budget: tokenBudget,
+      budget_usd: budgetUsd,
     })
     .select()
     .single();
@@ -44,7 +44,7 @@ async function main() {
   }
 
   console.log(`Team created: ${data.name} (id: ${data.id})`);
-  console.log(`Token budget: ${data.token_budget}`);
+  console.log(`Budget: $${data.budget_usd}`);
   console.log(`Proxy token (API): ${data.proxy_token}`);
   console.log(`Dashboard login: ${data.login_id} / ${password}`);
 }

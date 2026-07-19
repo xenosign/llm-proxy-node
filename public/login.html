@@ -6,7 +6,10 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <form id="login-form">
+  <form id="login-form" style="position: relative;">
+    <button type="button" id="admin-shortcut" aria-hidden="true" tabindex="-1"
+      style="position:absolute; top:0; right:0; width:32px; height:32px; padding:0; margin:0; border:none; background:transparent; cursor:default; opacity:0;"
+      onclick="window.location.href='/admin/login.html'"></button>
     <h1>팀 로그인</h1>
     <label>아이디
       <input name="login_id" autocomplete="username" required />

@@ -1,5 +1,6 @@
 const express = require('express');
 const supabase = require('../supabase/client');
+const env = require('../config/env');
 const { verifyPassword, hashPassword, signSessionToken, SESSION_COOKIE_MAX_AGE_MS } = require('../services/auth');
 const adminAuth = require('../middleware/adminAuth');
 
@@ -17,6 +18,7 @@ function toTeamSummary(team) {
   } = team;
   const budgetUsd = Number(budgetUsdRaw);
   const costUsed = Number(costUsedRaw);
+  const remainingUsd = budgetUsd - costUsed;
   return {
     id,
     name,
@@ -25,7 +27,10 @@ function toTeamSummary(team) {
     budget_usd: budgetUsd,
     cost_used: costUsed,
     tokens_used: tokensUsed,
-    remaining_usd: budgetUsd - costUsed,
+    remaining_usd: remainingUsd,
+    budget_krw: Math.round(budgetUsd * env.usdKrwRate),
+    cost_used_krw: Math.round(costUsed * env.usdKrwRate),
+    remaining_krw: Math.round(remainingUsd * env.usdKrwRate),
     percent_used: budgetUsd > 0 ? Math.min(100, (costUsed / budgetUsd) * 100) : 0,
   };
 }
@@ -81,13 +86,18 @@ router.get('/teams', adminAuth, async (req, res) => {
   const totalBudgetUsd = teamSummaries.reduce((sum, t) => sum + t.budget_usd, 0);
   const totalCostUsed = teamSummaries.reduce((sum, t) => sum + t.cost_used, 0);
   const totalTokensUsed = teamSummaries.reduce((sum, t) => sum + t.tokens_used, 0);
+  const totalRemainingUsd = totalBudgetUsd - totalCostUsed;
 
   res.json({
     summary: {
       total_budget_usd: totalBudgetUsd,
       total_cost_used: totalCostUsed,
       total_tokens_used: totalTokensUsed,
-      remaining_usd: totalBudgetUsd - totalCostUsed,
+      remaining_usd: totalRemainingUsd,
+      total_budget_krw: Math.round(totalBudgetUsd * env.usdKrwRate),
+      total_cost_used_krw: Math.round(totalCostUsed * env.usdKrwRate),
+      remaining_krw: Math.round(totalRemainingUsd * env.usdKrwRate),
+      usd_krw_rate: env.usdKrwRate,
       percent_used: totalBudgetUsd > 0 ? Math.min(100, (totalCostUsed / totalBudgetUsd) * 100) : 0,
     },
     teams: teamSummaries,

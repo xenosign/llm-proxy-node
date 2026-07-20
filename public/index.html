@@ -17,6 +17,10 @@
       return `$${Number(n).toFixed(4)}`;
     }
 
+    function formatKrw(n) {
+      return `₩${Math.round(Number(n)).toLocaleString('ko-KR')}`;
+    }
+
     async function load() {
       const res = await fetch('/api/dashboard/usage', { credentials: 'include' });
 
@@ -35,7 +39,7 @@
 
       const usedRow = document.createElement('div');
       usedRow.className = 'stat-row';
-      usedRow.innerHTML = `<span>사용 금액</span><span>${formatUsd(data.cost_used)} / ${formatUsd(data.budget_usd)}</span>`;
+      usedRow.innerHTML = `<span>사용 금액</span><span>${formatKrw(data.cost_used_krw)} (${formatUsd(data.cost_used)}) / ${formatKrw(data.budget_krw)} (${formatUsd(data.budget_usd)})</span>`;
       app.appendChild(usedRow);
 
       const tokenUsedRow = document.createElement('div');
@@ -53,7 +57,7 @@
 
       const remainingRow = document.createElement('div');
       remainingRow.className = 'stat-row-inline';
-      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatUsd(data.remaining_usd)}</span>`;
+      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatKrw(data.remaining_krw)} (${formatUsd(data.remaining_usd)})</span>`;
       app.appendChild(remainingRow);
 
       const tokenRow = document.createElement('div');

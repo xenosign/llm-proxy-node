@@ -17,6 +17,10 @@
       return `$${Number(n).toFixed(4)}`;
     }
 
+    function formatKrw(n) {
+      return `₩${Math.round(Number(n)).toLocaleString('ko-KR')}`;
+    }
+
     function buildSummaryCard(summary) {
       const card = document.createElement('div');
       card.className = 'card';
@@ -27,7 +31,7 @@
 
       const row = document.createElement('div');
       row.className = 'stat-row';
-      row.innerHTML = `<span>사용 금액</span><span>${formatUsd(summary.total_cost_used)} / ${formatUsd(summary.total_budget_usd)}</span>`;
+      row.innerHTML = `<span>사용 금액</span><span>${formatKrw(summary.total_cost_used_krw)} (${formatUsd(summary.total_cost_used)}) / ${formatKrw(summary.total_budget_krw)} (${formatUsd(summary.total_budget_usd)})</span>`;
       card.appendChild(row);
 
       const tokenRow = document.createElement('div');
@@ -45,7 +49,7 @@
 
       const remainingRow = document.createElement('div');
       remainingRow.className = 'stat-row';
-      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatUsd(summary.remaining_usd)}</span>`;
+      remainingRow.innerHTML = `<span>잔여 예산</span><span>${formatKrw(summary.remaining_krw)} (${formatUsd(summary.remaining_usd)})</span>`;
       card.appendChild(remainingRow);
 
       return card;
@@ -80,7 +84,7 @@
       td.className = 'usage-cell';
 
       const costDiv = document.createElement('div');
-      costDiv.textContent = formatUsd(team.cost_used);
+      costDiv.textContent = `${formatKrw(team.cost_used_krw)} (${formatUsd(team.cost_used)})`;
       td.appendChild(costDiv);
 
       const tokenDiv = document.createElement('div');
@@ -111,11 +115,11 @@
       tr.appendChild(buildUsageCell(team));
 
       const budgetViewTd = document.createElement('td');
-      budgetViewTd.textContent = formatUsd(team.budget_usd);
+      budgetViewTd.textContent = `${formatKrw(team.budget_krw)} (${formatUsd(team.budget_usd)})`;
       tr.appendChild(budgetViewTd);
 
       const remainingTd = document.createElement('td');
-      remainingTd.textContent = formatUsd(team.remaining_usd);
+      remainingTd.textContent = `${formatKrw(team.remaining_krw)} (${formatUsd(team.remaining_usd)})`;
       tr.appendChild(remainingTd);
 
       const percentTd = document.createElement('td');
@@ -280,7 +284,7 @@
           <th>API 토큰</th>
           <th>비밀번호</th>
           <th>사용량</th>
-          <th>예산($)</th>
+          <th>예산</th>
           <th>잔여 예산</th>
           <th>사용률</th>
           <th></th>

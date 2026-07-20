@@ -1,5 +1,6 @@
 const express = require('express');
 const supabase = require('../supabase/client');
+const env = require('../config/env');
 const { verifyPassword, signSessionToken, SESSION_COOKIE_MAX_AGE_MS } = require('../services/auth');
 const dashboardAuth = require('../middleware/dashboardAuth');
 
@@ -47,13 +48,18 @@ router.get('/usage', dashboardAuth, (req, res) => {
     req.team;
   const budgetUsd = Number(budgetUsdRaw);
   const costUsed = Number(costUsedRaw);
+  const remainingUsd = budgetUsd - costUsed;
 
   res.json({
     name,
     budget_usd: budgetUsd,
     cost_used: costUsed,
     tokens_used: tokensUsed,
-    remaining_usd: budgetUsd - costUsed,
+    remaining_usd: remainingUsd,
+    budget_krw: Math.round(budgetUsd * env.usdKrwRate),
+    cost_used_krw: Math.round(costUsed * env.usdKrwRate),
+    remaining_krw: Math.round(remainingUsd * env.usdKrwRate),
+    usd_krw_rate: env.usdKrwRate,
     percent_used: budgetUsd > 0 ? Math.min(100, (costUsed / budgetUsd) * 100) : 0,
     proxy_token: proxyToken,
   });

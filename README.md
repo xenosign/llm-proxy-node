@@ -15,6 +15,8 @@
 
 모델별 단가(입력/출력 토큰 1M당 USD)는 `src/config/env.js`의 기본값을 사용하며, `MODEL_PRICING` 환경변수(JSON)로 추가하거나 덮어쓸 수 있다. `ALLOWED_MODELS`에 있는 모든 모델은 단가가 설정되어 있어야 하며, 없으면 서버가 시작 시 에러를 낸다. OpenAI 공식 요금과 다를 수 있으니 [pricing 페이지](https://openai.com/api/pricing)를 확인하고 필요하면 `MODEL_PRICING`으로 갱신한다.
 
+OpenAI는 요금을 USD로만 청구하므로(원화 청구 없음), 대시보드에 표시되는 원화 금액은 `USD_KRW_RATE` 환경변수(기본값 1400)로 서버가 자체 환산한 값이다. 실제 환율과 차이가 날 수 있으므로 주기적으로 최신 환율에 맞춰 갱신한다.
+
 ## 모델 제한
 
 `ALLOWED_MODELS` 환경변수(콤마 구분, 기본값 `gpt-5-nano,gpt-4o-mini`)에 없는 모델을 요청하면 OpenAI가 실제로 존재하지 않는 모델을 호출했을 때와 동일한 404 `model_not_found` 에러를 반환한다.
@@ -27,6 +29,7 @@
    - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`: Supabase 프로젝트 설정 > API에서 확인
    - `JWT_SECRET`: 대시보드 로그인 세션 서명용 임의의 긴 문자열
    - `MODEL_PRICING` (선택): 모델별 단가를 기본값에서 바꾸거나 추가할 때만 설정
+   - `USD_KRW_RATE` (선택, 기본값 1400): 대시보드 원화 표시에 쓰이는 USD→KRW 환율
 3. `npm install`
 
 기존에 `token_budget` 기반으로 운영 중이던 프로젝트라면, `schema.sql`을 다시 실행하면 `token_budget` 컬럼이 삭제되고 `budget_usd`/`cost_used`가 0으로 추가된다. 토큰 수는 모델별 단가 이력이 없어 금액으로 자동 환산할 수 없으므로, 재실행 후 Admin 페이지에서 각 팀의 `budget_usd`를 다시 설정해야 한다.

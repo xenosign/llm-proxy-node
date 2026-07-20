@@ -1,6 +1,11 @@
 require('dotenv').config();
 
-const required = ['OPENAI_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'JWT_SECRET'];
+const required = [
+  'OPENAI_API_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'JWT_SECRET',
+];
 
 for (const key of required) {
   if (!process.env[key]) {
@@ -25,7 +30,7 @@ function parseModelPricing() {
     parsed = JSON.parse(process.env.MODEL_PRICING);
   } catch {
     throw new Error(
-      'MODEL_PRICING must be valid JSON, e.g. {"gpt-4o-mini":{"input":0.15,"output":0.6}} (USD per 1M tokens)'
+      'MODEL_PRICING must be valid JSON, e.g. {"gpt-4o-mini":{"input":0.15,"output":0.6}} (USD per 1M tokens)',
     );
   }
 
@@ -33,18 +38,34 @@ function parseModelPricing() {
 }
 
 const allowedModels = process.env.ALLOWED_MODELS
-  ? process.env.ALLOWED_MODELS.split(',').map((m) => m.trim()).filter(Boolean)
+  ? process.env.ALLOWED_MODELS.split(',')
+      .map((m) => m.trim())
+      .filter(Boolean)
   : DEFAULT_ALLOWED_MODELS;
 
 const modelPricing = parseModelPricing();
 
 for (const model of allowedModels) {
   const price = modelPricing[model];
-  if (!price || typeof price.input !== 'number' || typeof price.output !== 'number') {
+  if (
+    !price ||
+    typeof price.input !== 'number' ||
+    typeof price.output !== 'number'
+  ) {
     throw new Error(
-      `No pricing configured for allowed model "${model}". Add it to MODEL_PRICING (USD per 1M tokens), e.g. {"${model}":{"input":0.15,"output":0.6}}`
+      `No pricing configured for allowed model "${model}". Add it to MODEL_PRICING (USD per 1M tokens), e.g. {"${model}":{"input":0.15,"output":0.6}}`,
     );
   }
+}
+
+// OpenAI bills exclusively in USD (no native KRW), so KRW display is a local
+// conversion using this rate. Override via USD_KRW_RATE env var to match the
+// current exchange rate - this default drifts over time.
+const usdKrwRate = process.env.USD_KRW_RATE
+  ? Number(process.env.USD_KRW_RATE)
+  : 1500;
+if (!Number.isFinite(usdKrwRate) || usdKrwRate <= 0) {
+  throw new Error('USD_KRW_RATE must be a positive number');
 }
 
 module.exports = {
@@ -55,4 +76,5 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET,
   allowedModels,
   modelPricing,
+  usdKrwRate,
 };

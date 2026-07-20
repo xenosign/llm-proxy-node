@@ -5,8 +5,8 @@
 ## 동작 방식
 
 - 팀은 실제 OpenAI 키 대신 발급받은 `proxy_token`을 `Authorization: Bearer <proxy_token>`으로 사용
-- 서버가 토큰을 검증하고, 허용된 모델인지, 예산($) 초과 여부를 확인한 뒤, 실제 `OPENAI_API_KEY`로 바꿔서 OpenAI에 요청을 전달 (`/api/*` 전체 pass-through, 내부적으로 OpenAI의 `/v1/*` 경로로 재작성)
-- 요청/응답 모두 OpenAI API와 동일한 형식을 유지한다: 요청 헤더는 `Authorization`만 실제 키로 치환하고 나머지는 그대로 전달, 응답도 상태 코드·바디·헤더를 그대로 돌려준다. 에러 응답(401/404/429)도 OpenAI의 `{ error: { message, type, param, code } }` 포맷을 따른다. 따라서 나중에 프록시를 걷어내고 클라이언트의 `baseURL`을 `https://api.openai.com`으로, `apiKey`를 실제 OpenAI 키로 바꾸고 경로를 `/v1/*`로 되돌리면 별도 코드 수정 없이 동작한다
+- 서버가 토큰을 검증하고, 허용된 모델인지, 예산($) 초과 여부를 확인한 뒤, 실제 `OPENAI_API_KEY`로 바꿔서 OpenAI에 요청을 전달 (`/v1/*` 전체 pass-through)
+- 요청/응답 모두 OpenAI API와 동일한 형식을 유지한다: 요청 헤더는 `Authorization`만 실제 키로 치환하고 나머지는 그대로 전달, 응답도 상태 코드·바디·헤더를 그대로 돌려준다. 에러 응답(401/404/429)도 OpenAI의 `{ error: { message, type, param, code } }` 포맷을 따른다. 따라서 나중에 프록시를 걷어내고 클라이언트의 `baseURL`을 `https://api.openai.com`으로, `apiKey`를 실제 OpenAI 키로 바꾸기만 하면 별도 코드 수정 없이 동작한다
 - 스트리밍(`stream: true`) 요청도 SSE로 그대로 전달하며, 완료 시 응답의 `usage`(입력/출력 토큰 수)와 모델명을 바탕으로 `MODEL_PRICING` 요금표로 비용을 계산해 팀의 누적 금액과 토큰 수에 함께 반영
 
 쿼터는 소프트 리밋이다: 사용 금액은 OpenAI 응답을 받아야 알 수 있으므로 매 요청 전에는 현재 누적 금액만 확인한다. 따라서 한 번의 요청이 예산을 약간 초과할 수 있고, 그 다음 요청부터 차단된다.
@@ -63,7 +63,7 @@ npm start     # production
 ## 사용 예시
 
 ```
-curl https://<서버 주소>/api/chat/completions \
+curl https://<서버 주소>/v1/chat/completions \
   -H "Authorization: Bearer <team-proxy-token>" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'

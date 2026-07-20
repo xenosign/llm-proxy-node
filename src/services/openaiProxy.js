@@ -30,12 +30,14 @@ function copyResponseHeaders(upstreamResponse, res) {
 
 async function proxyToOpenAI(req, res) {
   const isStreaming = req.body && req.body.stream === true;
-  const upstreamPath = req.originalUrl.replace(/^\/api(?=\/|$)/, '/v1');
-  const targetUrl = `${OPENAI_BASE_URL}${upstreamPath}`;
+  const isResponsesApi = req.path.startsWith('/v1/responses');
+  const targetUrl = `${OPENAI_BASE_URL}${req.originalUrl}`;
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
 
   const outgoingBody = { ...req.body };
-  if (isStreaming) {
+  if (isStreaming && !isResponsesApi) {
+    // Responses API doesn't accept stream_options and includes usage in the
+    // response.completed event by default.
     outgoingBody.stream_options = { ...(outgoingBody.stream_options || {}), include_usage: true };
   }
 
@@ -123,9 +125,19 @@ async function handleStreamingResponse(upstreamResponse, teamId, res) {
 
         try {
           const json = JSON.parse(data);
+
+          // Chat Completions / legacy Completions stream chunks carry these at the top level.
           if (json.model) capturedModel = json.model;
           if (json.usage && typeof json.usage.total_tokens === 'number') {
             capturedUsage = json.usage;
+          }
+
+          // Responses API events wrap the response object under `response`.
+          if (json.response) {
+            if (json.response.model) capturedModel = json.response.model;
+            if (json.response.usage && typeof json.response.usage.total_tokens === 'number') {
+              capturedUsage = json.response.usage;
+            }
           }
         } catch {
           // malformed/partial SSE chunk, ignore

@@ -75,6 +75,14 @@ button:hover {
   margin-bottom: 0.5rem;
 }
 
+.stat-row-inline {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 0.5rem;
+}
+
 .bar {
   background: #eee;
   border-radius: 999px;
@@ -108,7 +116,6 @@ button:hover {
 }
 
 .token-row .token-value {
-  flex: 1;
   overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8rem;

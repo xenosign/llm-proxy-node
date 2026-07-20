@@ -7,6 +7,10 @@ const OPENAI_BASE_URL = 'https://api.openai.com';
 const REQUEST_HEADERS_TO_DROP = new Set(['host', 'connection', 'content-length', 'accept-encoding', 'authorization']);
 const RESPONSE_HEADERS_TO_DROP = new Set(['content-length', 'content-encoding', 'transfer-encoding', 'connection']);
 
+function resolveOpenaiApiKey(team) {
+  return (team && env.teamOpenaiKeys[team.login_id]) || env.openaiApiKey;
+}
+
 function buildUpstreamHeaders(req) {
   const headers = {};
 
@@ -16,7 +20,7 @@ function buildUpstreamHeaders(req) {
   }
 
   headers['content-type'] = req.get('content-type') || 'application/json';
-  headers['authorization'] = `Bearer ${env.openaiApiKey}`;
+  headers['authorization'] = `Bearer ${resolveOpenaiApiKey(req.team)}`;
 
   return headers;
 }

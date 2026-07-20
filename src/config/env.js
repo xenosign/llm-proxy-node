@@ -58,6 +58,25 @@ for (const model of allowedModels) {
   }
 }
 
+// Optional per-team OpenAI keys, keyed by team login_id. Teams not listed here
+// fall back to the shared OPENAI_API_KEY.
+function parseTeamOpenaiKeys() {
+  if (!process.env.TEAM_OPENAI_KEYS) return {};
+
+  let parsed;
+  try {
+    parsed = JSON.parse(process.env.TEAM_OPENAI_KEYS);
+  } catch {
+    throw new Error(
+      'TEAM_OPENAI_KEYS must be valid JSON, e.g. {"teamA":"sk-...","teamB":"sk-..."} (keyed by team login_id)',
+    );
+  }
+
+  return parsed;
+}
+
+const teamOpenaiKeys = parseTeamOpenaiKeys();
+
 // OpenAI bills exclusively in USD (no native KRW), so KRW display is a local
 // conversion using this rate. Override via USD_KRW_RATE env var to match the
 // current exchange rate - this default drifts over time.
@@ -76,5 +95,6 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET,
   allowedModels,
   modelPricing,
+  teamOpenaiKeys,
   usdKrwRate,
 };

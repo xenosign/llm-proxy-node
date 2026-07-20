@@ -6,6 +6,6 @@ const { proxyToOpenAI } = require('../services/openaiProxy');
 
 const router = express.Router();
 
-router.all('/v1/*', auth, modelAllowlist, quota, proxyToOpenAI);
+router.all('/api/*', auth, modelAllowlist, quota, proxyToOpenAI);
 
 module.exports = router;

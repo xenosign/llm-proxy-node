@@ -30,7 +30,8 @@ function copyResponseHeaders(upstreamResponse, res) {
 
 async function proxyToOpenAI(req, res) {
   const isStreaming = req.body && req.body.stream === true;
-  const targetUrl = `${OPENAI_BASE_URL}${req.originalUrl}`;
+  const upstreamPath = req.originalUrl.replace(/^\/api(?=\/|$)/, '/v1');
+  const targetUrl = `${OPENAI_BASE_URL}${upstreamPath}`;
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
 
   const outgoingBody = { ...req.body };
